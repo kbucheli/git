@@ -92,8 +92,11 @@ static int do_backfill(struct backfill_context *ctx)
 
 	if (ctx->sparse) {
 		CALLOC_ARRAY(info.pl, 1);
-		if (get_sparse_checkout_patterns(info.pl))
+		if (get_sparse_checkout_patterns(info.pl)) {
+			clear_pattern_list(info.pl);
+			free(info.pl);
 			return error(_("problem loading sparse-checkout"));
+		}
 	}
 
 	repo_init_revisions(ctx->repo, &revs, "");
@@ -113,6 +116,11 @@ static int do_backfill(struct backfill_context *ctx)
 		download_batch(ctx);
 
 	clear_backfill_context(ctx);
+	release_revisions(&revs);
+	if (info.pl) {
+		clear_pattern_list(info.pl);
+		free(info.pl);
+	}
 	return ret;
 }
 
