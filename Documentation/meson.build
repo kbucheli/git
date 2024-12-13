@@ -229,7 +229,7 @@ if docs_backend == 'asciidoc'
       '@INPUT@',
       '@OUTPUT@',
     ],
-    input: meson.current_source_dir() / 'asciidoc.conf.in',
+    input: 'asciidoc.conf.in',
     output: 'asciidoc.conf',
     depends: [git_version_file],
   )
@@ -260,7 +260,7 @@ elif docs_backend == 'asciidoctor'
       '@INPUT@',
       '@OUTPUT@',
     ],
-    input: meson.current_source_dir() / 'asciidoctor-extensions.rb.in',
+    input: 'asciidoctor-extensions.rb.in',
     output: 'asciidoctor-extensions.rb',
     depends: [git_version_file],
   )
@@ -302,10 +302,11 @@ cmd_lists = [
 documentation_deps += custom_target(
   command: [
     perl,
-    meson.current_source_dir() / 'cmd-list.perl',
+    '@INPUT@',
     meson.project_source_root(),
     meson.current_build_dir(),
   ] + cmd_lists,
+  input: 'cmd-list.perl',
   output: cmd_lists
 )
 
@@ -313,7 +314,7 @@ foreach mode : [ 'diff', 'merge' ]
   documentation_deps += custom_target(
     command: [
       shell,
-      meson.current_source_dir() / 'generate-mergetool-list.sh',
+      '@INPUT@',
       '..',
       'diff',
       '@OUTPUT@'
@@ -322,6 +323,7 @@ foreach mode : [ 'diff', 'merge' ]
       'MERGE_TOOLS_DIR=' + meson.project_source_root() / 'mergetools',
       'TOOL_MODE=' + mode,
     ],
+    input: 'generate-mergetool-list.sh',
     output: 'mergetools-' + mode + '.txt',
   )
 endforeach
@@ -333,9 +335,10 @@ foreach manpage, category : manpages
         '--backend=' + asciidoc_docbook,
         '--doctype=manpage',
         '--out-file=@OUTPUT@',
-        meson.current_source_dir() / manpage,
+        '@INPUT@',
       ],
       depends: documentation_deps,
+      input: manpage,
       output: fs.stem(manpage) + '.xml',
     )
 
@@ -343,10 +346,8 @@ foreach manpage, category : manpages
     manpage_target = custom_target(
       command: [
         xmlto,
-        '-m',
-        meson.current_source_dir() / 'manpage-normal.xsl',
-        '-m',
-        meson.current_source_dir() / 'manpage-bold-literal.xsl',
+        '-m', '@INPUT0@',
+        '-m', '@INPUT1@',
         '--stringparam',
         'man.base.url.for.relative.links=' + get_option('prefix') / get_option('mandir'),
         'man',
@@ -354,6 +355,10 @@ foreach manpage, category : manpages
         '-o',
         meson.current_build_dir(),
       ] + xmlto_extra,
+      input: [
+        'manpage-normal.xsl',
+        'manpage-bold-literal.xsl',
+      ],
       output: manpage_path,
       install: true,
       install_dir: get_option('mandir') / 'man' + category.to_string(),
@@ -366,9 +371,10 @@ foreach manpage, category : manpages
         '--backend=' + asciidoc_html,
         '--doctype=manpage',
         '--out-file=@OUTPUT@',
-        meson.current_source_dir() / manpage,
+        '@INPUT@',
       ],
       depends: documentation_deps,
+      input: manpage,
       output: fs.stem(manpage) + '.html',
       install: true,
       install_dir: get_option('datadir') / 'doc/git-doc',
