@@ -29,7 +29,10 @@ export GIT_CEILING_DIRECTORIES
 
 # First see if there is a version file (included in release tarballs),
 # then try git-describe, then default.
-if test -f "$SOURCE_DIR"/version
+if test -n "$GIT_VERSION"
+then
+    VN="$GIT_VERSION"
+elif test -f "$SOURCE_DIR"/version
 then
 	VN=$(cat "$SOURCE_DIR"/version) || VN="$DEF_VER"
 elif {
