@@ -3256,7 +3256,7 @@ int repo_config_set_multivar_in_file_gently(struct repository *r,
 		    write_pair(fd, key, value, comment, &store) < 0)
 			goto write_err_out;
 	} else {
-		struct stat st;
+		struct stat st, st_lock;
 		size_t copy_begin, copy_end;
 		int i, new_line = 0;
 		struct config_options opts;
@@ -3336,10 +3336,18 @@ int repo_config_set_multivar_in_file_gently(struct repository *r,
 		close(in_fd);
 		in_fd = -1;
 
-		if (chmod(get_lock_file_path(&lock), st.st_mode & 07777) < 0) {
-			error_errno(_("chmod on %s failed"), get_lock_file_path(&lock));
+		if (stat(get_lock_file_path(&lock), &st_lock) == -1) {
+			error_errno(_("stat on %s failed"), get_lock_file_path(&lock));
 			ret = CONFIG_NO_WRITE;
 			goto out_free;
+		}
+
+		if ((st.st_mode & 07777) != (st_lock.st_mode & 07777)) {
+			if (chmod(get_lock_file_path(&lock), st.st_mode & 07777) < 0) {
+				error_errno(_("chmod on %s failed"), get_lock_file_path(&lock));
+				ret = CONFIG_NO_WRITE;
+				goto out_free;
+			}
 		}
 
 		if (store.seen_nr == 0) {
